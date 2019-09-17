@@ -8,8 +8,8 @@ import java.io.IOException;
 
 public class MainFrame extends JFrame{
     private JPanel panel1;
-    private JMenuBar myMenu;
     private JMenuBar myMenuBar;
+    private JMenuBar myMenuBarBar;
     private JMenu file;
     private JMenu fileMenu;
     private JMenu projectMenu;
@@ -23,7 +23,17 @@ public class MainFrame extends JFrame{
     private JTextArea codeEdit;
     private JFileChooser fc = new JFileChooser();
 
-    //  CONSTRUCTOR FOR OUR WINDOW
+    //  MAIN METHOD
+    public static void main(String[] args) {
+//      JFrame frame = new JFrame("MainFrame");
+//      frame.setContentPane(new MainFrame().panel1);
+//      frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+//      frame.pack();
+//      frame.setVisible(true);
+		new MainFrame();
+    }
+	
+	//  CONSTRUCTOR FOR OUR WINDOW
     public MainFrame(){
         JScrollPane scrollPane = new JScrollPane(codeEdit, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 
@@ -34,9 +44,10 @@ public class MainFrame extends JFrame{
 
         //  MENU and MENU ITEMS
         add(scrollPane);
-        myMenu = new JMenuBar();
-        setJMenuBar(myMenu);
-        myMenu.add(file);
+        myMenuBar = new JMenuBar();
+        setJMenuBar(myMenuBar);
+		file = new JMenu();
+        myMenuBar.add(file);
         file.add(Open);
         file.add(Save);
         file.add(Create);
@@ -118,14 +129,5 @@ public class MainFrame extends JFrame{
         }
     }
 
-    //  MAIN METHOD
-    public static void main(String[] args) {
-//        JFrame frame = new JFrame("MainFrame");
-//        frame.setContentPane(new MainFrame().panel1);
-//        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//        frame.pack();
-//        frame.setVisible(true);
-        new MainFrame();
-    }
-
+    
 }
