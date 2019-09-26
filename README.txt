@@ -1,6 +1,7 @@
-Team Wolverines
-9/26/19
+Team Wolverines; Patrick Yee, JW Banks, Jeffrey Rodriguez, Brent Nicholas
+Github: https://github.com/Ljw1765/SoftwareDesign
 
+9/26/19
 Code Editor Project
 
 The class files are in \src\Wolverines\.
