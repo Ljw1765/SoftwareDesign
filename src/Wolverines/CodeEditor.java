@@ -120,7 +120,8 @@ class CodeEditor extends JFrame implements ActionListener
 //            }
 //        }
             else if (s.equals("Open")) {
-            // Create an object of JFileChooser class 
+            // Create an object of JFileChooser class
+                code.setText("");
             JFileChooser j = new JFileChooser("f:");
 
             // Invoke the showsOpenDialog function to show the save dialog 
