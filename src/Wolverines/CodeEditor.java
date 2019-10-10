@@ -6,19 +6,24 @@ import java.awt.event.*;
 import java.awt.*;
 import javax.swing.border.*;
 import javax.swing.text.AttributeSet;
+import javax.swing.text.MutableAttributeSet;
 import javax.swing.text.SimpleAttributeSet;
 import javax.swing.text.StyleConstants;
 import javax.swing.text.StyleContext;
+import javax.swing.text.Document;
+import javax.swing.text.StyledDocument;
+import javax.swing.event.*;
 
 class CodeEditor extends JFrame implements ActionListener
 {
-    JTextPane code; //text area
+    static JTextPane code; //text area
     JFrame mainPage; //main page of the code editor
 
     CodeEditor()
     {
         mainPage = new JFrame("Team Wolverines"); //title of the window
         code = new JTextPane();
+		code.getStyledDocument().addDocumentListener(new MyDocumentListener());
 
         JMenuBar MainMenuBar = new JMenuBar(); //menu bar of main page
 
@@ -142,41 +147,11 @@ class CodeEditor extends JFrame implements ActionListener
                     // Buffered reader 
                     BufferedReader br = new BufferedReader(fr);
 
-                    // Take the input from the file 
-//                    while ((s1 = br.readLine()) != null)
-//                    {
-//                        sl = sl + "\n" + s1;
-//                    }
-                    // Set the text 
-                    //code.setText(sl);
-
                     while ((s1 = br.readLine()) != null)
                     {
-                        if (s1.contains("if"))
-                            appendToPane(code, "if\n", Color.BLUE);
-                        else if (s1.contains("else"))
-                            appendToPane(code, "else\n", Color.BLUE);
-                        else if (s1.contains("for"))
-                            appendToPane(code, "for\n", Color.BLUE);
-                        else if (s1.contains("while"))
-                            appendToPane(code, "while\n", Color.BLUE);
-                        else if (s1.contains("+"))
-                            appendToPane(code, "+\n", Color.RED);
-                        else if (s1.contains("-"))
-                            appendToPane(code, "-\n", Color.RED);
-                        else if (s1.contains("/"))
-                            appendToPane(code, "/\n", Color.RED);
-                        else if (s1.contains("*"))
-                            appendToPane(code, "*\n", Color.RED);
-                        else if (s1.contains("||"))
-                            appendToPane(code, "||\n", Color.RED);
-                        else if (s1.contains("&&"))
-                            appendToPane(code, "&&\n", Color.RED);
-                        else
-                        {
-                            appendToPane(code, s1 + "\n", Color.BLACK);
-                        }
+                        appendToPane(code, s1 + "\n", Color.BLACK);
                     }
+					checkKeywords();
                 } catch (Exception evt) {
                     JOptionPane.showMessageDialog(mainPage, evt.getMessage());
                 }
@@ -191,8 +166,71 @@ class CodeEditor extends JFrame implements ActionListener
             code.setText("");
         }
     }
+	
+	static class MyDocumentListener implements DocumentListener {
+		public void insertUpdate(DocumentEvent e) {
+			checkKeywords();
+		}
+		public void removeUpdate(DocumentEvent e) {
+			checkKeywords();
+		}
+		public void changedUpdate(DocumentEvent e) {
+				
+		}
+	}
+	
+	public static void checkKeywords()
+	{
+		try
+		{
+			highlightSyntax("if", Color.BLUE);
+			highlightSyntax("else", Color.BLUE);
+			highlightSyntax("for", Color.BLUE);
+			highlightSyntax("while", Color.BLUE);
+			highlightSyntax("+", Color.RED);
+			highlightSyntax("-", Color.RED);
+			highlightSyntax("/", Color.RED);
+			highlightSyntax("\\", Color.RED);
+			highlightSyntax("*", Color.RED);
+			highlightSyntax("||", Color.RED);
+			highlightSyntax("&&", Color.RED);
+		}
+		catch(Exception err)
+		{
+			
+		}
+	}
+	
+	public static void highlightSyntax(String pattern, Color color)
+	{
+		Runnable doHighlight = new Runnable() {
+			@Override
+			public void run() {
+				try
+				{
+					MutableAttributeSet attributes = new SimpleAttributeSet();
+					StyleConstants.setForeground(attributes, color);
 
-    private void appendToPane(JTextPane tp, String msg, Color c)
+					StyledDocument doc = code.getStyledDocument();
+					String text = doc.getText(0, doc.getLength());
+					
+					
+					int pos = 0;
+					while ((pos = text.indexOf(pattern, pos)) >= 0) {
+						doc.setCharacterAttributes(pos, pattern.length(), attributes, true);
+						pos += pattern.length();
+					}
+				}
+				catch(Exception e)
+				{
+					JOptionPane.showMessageDialog(null, e.getMessage());
+				}
+			}
+		};       
+		SwingUtilities.invokeLater(doHighlight);
+	}
+	
+    public static void appendToPane(JTextPane tp, String msg, Color c)
     {
         StyleContext sc = StyleContext.getDefaultStyleContext();
         AttributeSet aset = sc.addAttribute(SimpleAttributeSet.EMPTY, StyleConstants.Foreground, c);
@@ -200,7 +238,7 @@ class CodeEditor extends JFrame implements ActionListener
         aset = sc.addAttribute(aset, StyleConstants.FontFamily, "Lucida Console");
         aset = sc.addAttribute(aset, StyleConstants.Alignment, StyleConstants.ALIGN_JUSTIFIED);
 
-        int len = tp.getDocument().getLength();
+        int len = tp.getStyledDocument().getLength();
         tp.setCaretPosition(len);
         tp.setCharacterAttributes(aset, false);
         tp.replaceSelection(msg);
