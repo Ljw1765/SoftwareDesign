@@ -200,7 +200,7 @@ class CodeEditor extends JFrame implements ActionListener
 			Runtime runTime = Runtime.getRuntime();
 			try 
 			{
-				Process process = runTime.exec("g++ .\\test.cpp");
+				Process process = runTime.exec("javac .\\test.cpp");
 				InputStream inputStream = process.getInputStream();
 				InputStreamReader isr = new InputStreamReader(inputStream);
 				InputStream errorStream = process.getErrorStream();
