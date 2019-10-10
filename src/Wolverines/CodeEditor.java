@@ -13,6 +13,11 @@ import javax.swing.text.StyleContext;
 import javax.swing.text.Document;
 import javax.swing.text.StyledDocument;
 import javax.swing.event.*;
+import java.awt.KeyEventDispatcher;
+import java.awt.KeyboardFocusManager;
+import java.awt.event.KeyEvent;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 class CodeEditor extends JFrame implements ActionListener
 {
@@ -22,6 +27,7 @@ class CodeEditor extends JFrame implements ActionListener
     CodeEditor()
     {
         mainPage = new JFrame("Team Wolverines"); //title of the window
+		mainPage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         code = new JTextPane();
 		code.getStyledDocument().addDocumentListener(new MyDocumentListener());
 
@@ -63,9 +69,22 @@ class CodeEditor extends JFrame implements ActionListener
         projectMenu.add(saveProject);
         projectMenu.add(closeProject);
 
+        //project menu
+        JMenu executeMenu = new JMenu("Execute");
+        //items for project menu
+        JMenuItem compileProject = new JMenuItem("Compile");
+        JMenuItem runProject = new JMenuItem("Run");
+        //actions for each item
+        compileProject.addActionListener(this);
+        runProject.addActionListener(this);
+        //add actions to the project menu
+        executeMenu.add(compileProject);
+        executeMenu.add(runProject);
+
         //adding the menus to the main menu bar
         MainMenuBar.add(projectMenu);
         MainMenuBar.add(fileMenu);
+        MainMenuBar.add(executeMenu);
 
         mainPage.setJMenuBar(MainMenuBar);
         mainPage.add(code);
@@ -76,95 +95,143 @@ class CodeEditor extends JFrame implements ActionListener
     public void actionPerformed(ActionEvent e) {
         String s = e.getActionCommand();
 
-//        if (s.equals("cut"))
-//            code.cut();
-//        else if (s.equals("copy"))
-//            code.copy();
-//        else if (s.equals("paste"))
-//            code.paste();
-//        else
-            if (s.equals("Save"))
-            {
-            // Create an object of JFileChooser class 
-            JFileChooser j = new JFileChooser("f:");
+//      if (s.equals("cut"))
+//          code.cut();
+//      else if (s.equals("copy"))
+//          code.copy();
+//      else if (s.equals("paste"))
+//          code.paste();
+//      else
+            
+		if (s.equals("Save"))
+		{
+			// Create an object of JFileChooser class 
+			JFileChooser j = new JFileChooser("f:");
 
-            // Invoke the showsSaveDialog function to show the save dialog 
-            int r = j.showSaveDialog(null);
+			// Invoke the showsSaveDialog function to show the save dialog 
+			int r = j.showSaveDialog(null);
 
-            if (r == JFileChooser.APPROVE_OPTION) {
+			if (r == JFileChooser.APPROVE_OPTION) {
 
-                // Set the label to the path of the selected directory 
-                File fi = new File(j.getSelectedFile().getAbsolutePath());
+				// Set the label to the path of the selected directory 
+				File fi = new File(j.getSelectedFile().getAbsolutePath());
 
-                try {
-                    // Create a file writer 
-                    FileWriter wr = new FileWriter(fi, false);
+				try {
+					// Create a file writer 
+					FileWriter wr = new FileWriter(fi, false);
 
-                    // Create buffered writer to write 
-                    BufferedWriter w = new BufferedWriter(wr);
+					// Create buffered writer to write 
+					BufferedWriter w = new BufferedWriter(wr);
 
-                    // Write 
-                    w.write(code.getText());
+					// Write 
+					w.write(code.getText());
 
-                    w.flush();
-                    w.close();
-                } catch (Exception evt) {
-                    JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-                }
-            }
-            // If the user cancelled the operation 
-            else
-                JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
-        }
-//            else if (s.equals("Print")) {
-//            try {
-//                // print the file
-//                code.print();
-//            } catch (Exception evt) {
-//                JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-//            }
-//        }
-            else if (s.equals("Open")) {
-            // Create an object of JFileChooser class
-                code.setText("");
-            JFileChooser j = new JFileChooser("f:");
+					w.flush();
+					w.close();
+				} catch (Exception evt) {
+					JOptionPane.showMessageDialog(mainPage, evt.getMessage());
+				}
+			}
+			// If the user cancelled the operation 
+			else
+				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
+		}
+//      else if (s.equals("Print")) 
+//		{
+//        	try 
+//			{
+//             	// print the file
+//             	code.print();
+//         	} 
+//			catch (Exception evt) 
+//			{
+//             	JOptionPane.showMessageDialog(mainPage, evt.getMessage());
+//         	}
+//      }
+		else if (s.equals("Open")) {
+			// Create an object of JFileChooser class
+			code.setText("");
+			JFileChooser j = new JFileChooser("f:");
 
-            // Invoke the showsOpenDialog function to show the save dialog 
-            int r = j.showOpenDialog(null);
+			// Invoke the showsOpenDialog function to show the save dialog 
+			int r = j.showOpenDialog(null);
 
-            // If the user selects a file 
-            if (r == JFileChooser.APPROVE_OPTION) {
-                // Set the label to the path of the selected directory 
-                File fi = new File(j.getSelectedFile().getAbsolutePath());
+			// If the user selects a file 
+			if (r == JFileChooser.APPROVE_OPTION) 
+			{
+				// Set the label to the path of the selected directory 
+				File fi = new File(j.getSelectedFile().getAbsolutePath());
 
-                try {
-                    // String 
-                    String s1 = "", sl = "";
+				try {
+					// String 
+					String s1 = "", sl = "";
 
-                    // File reader 
-                    FileReader fr = new FileReader(fi);
+					// File reader 
+					FileReader fr = new FileReader(fi);
 
-                    // Buffered reader 
-                    BufferedReader br = new BufferedReader(fr);
+					// Buffered reader 
+					BufferedReader br = new BufferedReader(fr);
 
-                    while ((s1 = br.readLine()) != null)
-                    {
-                        appendToPane(code, s1 + "\n", Color.BLACK);
-                    }
+					while ((s1 = br.readLine()) != null)
+					{
+						appendToPane(code, s1 + "\n", Color.BLACK);
+					}
 					checkKeywords();
-                } catch (Exception evt) {
-                    JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-                }
-            }
-            // If the user cancelled the operation 
-            else
-                JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
-        } else if (s.equals("New")) {
-            code.setText("");
-        } else if (s.equals("Close")) {
-            //mainPage.setVisible(false);
-            code.setText("");
-        }
+				} catch (Exception evt) {
+					JOptionPane.showMessageDialog(mainPage, evt.getMessage());
+				}
+			}
+			// If the user cancelled the operation 
+			else
+				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
+		} 
+		else if (s.equals("New")) 
+		{
+			code.setText("");
+		} 
+		else if (s.equals("Close")) 
+		{
+			//mainPage.setVisible(false);
+			code.setText("");
+		}
+		else if (s.equals("Compile")) 
+		{
+			JOptionPane.showMessageDialog(null, "Compiling code...");
+			Runtime runTime = Runtime.getRuntime();
+			try 
+			{
+				Process process = runTime.exec("g++ .\\test.cpp");
+				InputStream inputStream = process.getInputStream();
+				InputStreamReader isr = new InputStreamReader(inputStream);
+				InputStream errorStream = process.getErrorStream();
+				InputStreamReader esr = new InputStreamReader(errorStream);
+
+				int n1;
+				char[] c1 = new char[1024];
+				StringBuffer standardOutput = new StringBuffer();
+				while ((n1 = isr.read(c1)) > 0) {
+					standardOutput.append(c1, 0, n1);
+				}
+				JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
+
+				int n2;
+				char[] c2 = new char[1024];
+				StringBuffer standardError = new StringBuffer();
+				while ((n2 = esr.read(c2)) > 0) {
+					standardError.append(c2, 0, n2);
+				}
+				JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+				process.destroy();
+			} 
+			catch (IOException err) 
+			{
+				err.printStackTrace();
+			}
+		}
+		else if (s.equals("Run")) 
+		{
+			JOptionPane.showMessageDialog(null, "Running...");
+		}
     }
 	
 	static class MyDocumentListener implements DocumentListener {
@@ -197,7 +264,7 @@ class CodeEditor extends JFrame implements ActionListener
 		}
 		catch(Exception err)
 		{
-			
+			JOptionPane.showMessageDialog(null, err.getMessage());
 		}
 	}
 	
