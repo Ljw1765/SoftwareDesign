@@ -18,17 +18,28 @@ import java.awt.KeyboardFocusManager;
 import java.awt.event.KeyEvent;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.*;
+import java.nio.file.Files.*;
+import java.nio.file.Paths.*;
+import java.util.List;
+import java.util.stream.*;
 
 class CodeEditor extends JFrame implements ActionListener
 {
     static JTextPane code; //text area
+    //static JSyntaxPane codeNew; //text area
     JFrame mainPage; //main page of the code editor
-
+	JTabbedPane tabPane; //Tabs
+	
     CodeEditor()
     {
         mainPage = new JFrame("Team Wolverines"); //title of the window
 		mainPage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		tabPane = new JTabbedPane();
+		
+		//Editor
         code = new JTextPane();
+        //codeNew = new JSyntaxPane();
 		code.getStyledDocument().addDocumentListener(new MyDocumentListener());
 
         JMenuBar MainMenuBar = new JMenuBar(); //menu bar of main page
@@ -87,7 +98,11 @@ class CodeEditor extends JFrame implements ActionListener
         MainMenuBar.add(executeMenu);
 
         mainPage.setJMenuBar(MainMenuBar);
-        mainPage.add(code);
+		
+		//Add tabs to tabPane
+		tabPane.addTab("Tab 1", null, code, "Does nothing");
+        mainPage.add(tabPane);
+        //mainPage.add(codeNew);
         mainPage.setSize(500, 500);
         mainPage.setVisible(true);
     }
@@ -95,14 +110,6 @@ class CodeEditor extends JFrame implements ActionListener
     public void actionPerformed(ActionEvent e) {
         String s = e.getActionCommand();
 
-//      if (s.equals("cut"))
-//          code.cut();
-//      else if (s.equals("copy"))
-//          code.copy();
-//      else if (s.equals("paste"))
-//          code.paste();
-//      else
-            
 		if (s.equals("Save"))
 		{
 			// Create an object of JFileChooser class 
@@ -136,23 +143,51 @@ class CodeEditor extends JFrame implements ActionListener
 			else
 				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
 		}
-//      else if (s.equals("Print")) 
-//		{
-//        	try 
-//			{
-//             	// print the file
-//             	code.print();
-//         	} 
-//			catch (Exception evt) 
-//			{
-//             	JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-//         	}
-//      }
 		else if (s.equals("Open")) {
 			// Create an object of JFileChooser class
 			code.setText("");
 			JFileChooser j = new JFileChooser("f:");
+			j.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			
+			// Disable the "All files" option.
+			j.setAcceptAllFileFilterUsed(false);
+			//    
+			if (j.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) { 
+				try (Stream<Path> walk = Files.walk(Paths.get(j.getSelectedFile().toString()))) {
+					List<String> result = walk.map(x -> x.toString()).filter(f -> f.endsWith(".java")).collect(Collectors.toList());
+					result.forEach(System.out::println);
+					
+					//Create needed objects for reading files
+					FileReader fr;
+					BufferedReader br;
+					JTextPane newPane;
+					String s1 = "";
+					
+					//Remove current tabs
+					tabPane.removeAll();
+					
+					//Read files and create new panes
+					for(int i = 0; i < result.size(); i += 1)
+					{
+						fr = new FileReader(result.get(i));
+						br = new BufferedReader(fr);
+						newPane = new JTextPane();
+						while ((s1 = br.readLine()) != null)
+						{
+							appendToPane(newPane, s1 + "\n", Color.BLACK);
+						}
+						tabPane.addTab("Tab " + i, null, newPane, "Does nothing");
+					}
+				} 
+				catch (IOException evt) {
+					evt.printStackTrace();
+				}
+			}
+			else {
+				System.out.println("No Selection ");
+			}
 
+			/*
 			// Invoke the showsOpenDialog function to show the save dialog 
 			int r = j.showOpenDialog(null);
 
@@ -184,6 +219,8 @@ class CodeEditor extends JFrame implements ActionListener
 			// If the user cancelled the operation 
 			else
 				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
+			
+			*/
 		} 
 		else if (s.equals("New")) 
 		{

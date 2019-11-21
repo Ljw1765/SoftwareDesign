@@ -13,6 +13,14 @@
         <maven.compiler.target>1.8</maven.compiler.target>
     </properties>
 	
+	<dependencies>
+		<dependency>
+			<groupId>org.apache.maven.plugins</groupId>
+			<artifactId>maven-install-plugin</artifactId>
+			<version>2.5</version>
+		</dependency>
+	</dependencies>
+	
 	<build>
         <plugins>
             <plugin>
@@ -36,6 +44,26 @@
                     </execution>
                 </executions>
             </plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+				<version>2.5</version>
+				<executions>
+					<execution>
+						<phase>initialize</phase>
+						<goals>
+							<goal>install-file</goal>
+						</goals>
+						<configuration>
+							<groupId>org.apache.maven.plugins</groupId>
+							<artifactId>j-syntaxpane</artifactId>
+							<version>1.0</version>
+							<packaging>jar</packaging>
+							<file>${basedir}/include-jars/jsyntaxpane-0.9.5-b29.jar</file>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
         </plugins>
     </build>
 </project>
