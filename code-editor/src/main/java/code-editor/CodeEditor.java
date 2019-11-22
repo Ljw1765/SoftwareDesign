@@ -26,91 +26,205 @@ import java.util.stream.*;
 
 class CodeEditor extends JFrame implements ActionListener
 {
-    static JTextPane code; //text area
+    
     //static JSyntaxPane codeNew; //text area
     JFrame mainPage; //main page of the code editor
-	JTabbedPane tabPane; //Tabs
+	static JTabbedPane tabPane; //Tabs
+	static File projectDir;
 	
     CodeEditor()
     {
-        mainPage = new JFrame("Team Wolverines"); //title of the window
-		mainPage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        //Window Details
+		mainPage = new JFrame("Team Wolverines"); //Title bar
+		mainPage.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE); 
 		tabPane = new JTabbedPane();
+		tabPane.addChangeListener(new ChangeListener() {
+			public void stateChanged(ChangeEvent e) {
+				checkKeywords();
+			}
+		});
 		
-		//Editor
-        code = new JTextPane();
-        //codeNew = new JSyntaxPane();
-		code.getStyledDocument().addDocumentListener(new MyDocumentListener());
+		//Menu bar
+        JMenuBar MainMenuBar = new JMenuBar();
 
-        JMenuBar MainMenuBar = new JMenuBar(); //menu bar of main page
-
-        //file menu
+        //File menu
         JMenu fileMenu = new JMenu("File");
-        //items for file Menu
-        JMenuItem newFile = new JMenuItem("New");
+        
+		JMenuItem newFile = new JMenuItem("New");
         JMenuItem openFile = new JMenuItem("Open");
         JMenuItem saveFile = new JMenuItem("Save");
         JMenuItem closeFile = new JMenuItem("Close");
-        //actions for each item
-        newFile.addActionListener(this);
+        
+		newFile.addActionListener(this);
         openFile.addActionListener(this);
         saveFile.addActionListener(this);
         closeFile.addActionListener(this);
-        //add actions to the file menu
-        fileMenu.add(newFile);
+        
+		fileMenu.add(newFile);
         fileMenu.add(openFile);
         fileMenu.add(saveFile);
         fileMenu.add(closeFile);
 
-        //project menu
-        JMenu projectMenu = new JMenu("Project");
-        //items for project menu
-        JMenuItem newProject = new JMenuItem("New");
-        JMenuItem openProject = new JMenuItem("Open");
-        JMenuItem saveProject = new JMenuItem("Save");
-        JMenuItem closeProject = new JMenuItem("Close");
-        //actions for each item
-        newProject.addActionListener(this);
-        openProject.addActionListener(this);
-        saveProject.addActionListener(this);
-        closeProject.addActionListener(this);
-        //add actions to the project menu
-        projectMenu.add(newProject);
-        projectMenu.add(openProject);
-        projectMenu.add(saveProject);
-        projectMenu.add(closeProject);
+        //Files Menu
+        JMenu filesMenu = new JMenu("Source");
+        
+		JMenuItem addFile = new JMenuItem("Add a File");
+        JMenuItem removeFile = new JMenuItem("Remove This File");
+        
+		addFile.addActionListener(this);
+        removeFile.addActionListener(this);
+        
+		filesMenu.add(addFile);
+        filesMenu.add(removeFile);
 
-        //project menu
+        //Execute menu
         JMenu executeMenu = new JMenu("Execute");
-        //items for project menu
-        JMenuItem compileProject = new JMenuItem("Compile");
+        
+		JMenuItem compileProject = new JMenuItem("Compile");
         JMenuItem runProject = new JMenuItem("Run");
-        //actions for each item
-        compileProject.addActionListener(this);
+        
+		compileProject.addActionListener(this);
         runProject.addActionListener(this);
-        //add actions to the project menu
-        executeMenu.add(compileProject);
+        
+		executeMenu.add(compileProject);
         executeMenu.add(runProject);
 
-        //adding the menus to the main menu bar
-        MainMenuBar.add(projectMenu);
+        //Adding the menus to the main menu bar
         MainMenuBar.add(fileMenu);
+        MainMenuBar.add(filesMenu);
         MainMenuBar.add(executeMenu);
-
+		
+		//Add the menu bar
         mainPage.setJMenuBar(MainMenuBar);
 		
-		//Add tabs to tabPane
-		tabPane.addTab("Tab 1", null, code, "Does nothing");
-        mainPage.add(tabPane);
-        //mainPage.add(codeNew);
+		//Set up & add the tabPane
+		//initialize();
+		mainPage.add(tabPane);
+		
+		//Window Details
         mainPage.setSize(500, 500);
         mainPage.setVisible(true);
     }
 
     public void actionPerformed(ActionEvent e) {
         String s = e.getActionCommand();
-
-		if (s.equals("Save"))
+		
+		if (s.equals("New")) 
+		{
+			int chooseResult = -1;
+			tabPane.removeAll();
+			
+			// Create an object of JFileChooser class
+			JFileChooser j = new JFileChooser();
+			j.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			
+			// Disable the "All files" option.
+			j.setAcceptAllFileFilterUsed(false);
+			
+			//Select the directory
+			chooseResult = j.showOpenDialog(this);
+				
+			if(chooseResult == JFileChooser.ERROR_OPTION)
+			{
+				JOptionPane.showMessageDialog(null, "There was an error.");
+			}
+			else if (chooseResult == JFileChooser.APPROVE_OPTION){
+				//Get selected directory
+				projectDir = j.getSelectedFile();
+				
+				//Check if Java Files aready exist here
+				try (Stream<Path> walk = Files.walk(Paths.get(projectDir.toString()),1)) {
+					List<String> result = walk.map(x -> x.toString()).filter(f -> f.endsWith(".java")).collect(Collectors.toList());
+					
+					if(result.size() > 0)
+					{
+						JOptionPane.showMessageDialog(null, "It seems there's already a Java project here. If you want to include these files, use the Open command instead.");
+					}
+				}
+				catch (IOException evt) {
+					//If no readable Java files are in this directory
+					JOptionPane.showMessageDialog(null, "There was an error loading a file.");
+					evt.printStackTrace();
+				}
+				catch (NullPointerException evt) {
+					//If no readable Java files are in this directory
+					JOptionPane.showMessageDialog(null, "There are no accessible java files here.");
+					evt.printStackTrace();
+				}
+				
+				addSourceFile();
+			}
+			else {
+				System.out.println("No Selection ");
+			}
+		} 
+		else if (s.equals("Open")) {
+			int chooseResult = -1;
+			
+			// Create an object of JFileChooser class
+			JFileChooser j = new JFileChooser();
+			j.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
+			
+			// Disable the "All files" option.
+			j.setAcceptAllFileFilterUsed(false);
+			
+			//Select the directory
+			chooseResult = j.showOpenDialog(this);
+				
+			if(chooseResult == JFileChooser.ERROR_OPTION)
+			{
+				JOptionPane.showMessageDialog(null, "There was an error.");
+			}
+			else if (chooseResult == JFileChooser.APPROVE_OPTION) { 
+				//Get selected directory
+				projectDir = j.getSelectedFile();
+				
+				try (Stream<Path> walk = Files.walk(Paths.get(projectDir.toString()),1)) {
+					List<String> result = walk.map(x -> x.toString()).filter(f -> f.endsWith(".java")).collect(Collectors.toList());
+					result.forEach(System.out::println);
+					
+					//Create needed objects for reading files
+					File fi;
+					FileReader fr;
+					BufferedReader br;
+					JTextPane newPane;
+					String s1 = "";
+					
+					//Remove current tabs
+					tabPane.removeAll();
+					
+					//Read files and create new panes
+					for(int i = 0; i < result.size(); i += 1)
+					{
+						fi = new File(result.get(i));
+						fr = new FileReader(fi);
+						br = new BufferedReader(fr);
+						newPane = new JTextPane();
+						newPane.getStyledDocument().addDocumentListener(new MyDocumentListener());
+						while ((s1 = br.readLine()) != null)
+						{
+							appendToPane(newPane, s1 + "\n", Color.BLACK);
+						}
+						tabPane.addTab(fi.getName(), null, newPane, null);
+					}
+					checkKeywords();
+				}
+				catch (IOException evt) {
+					//If no readable Java files are in this directory
+					JOptionPane.showMessageDialog(null, "There was an error loading a file.");
+					evt.printStackTrace();
+				}
+				catch (NullPointerException evt) {
+					//If no readable Java files are in this directory
+					JOptionPane.showMessageDialog(null, "There are no accessible java files here.");
+					evt.printStackTrace();
+				}
+			}
+			else {
+				System.out.println("No Selection ");
+			}
+		} 
+		else if (s.equals("Save"))
 		{
 			// Create an object of JFileChooser class 
 			JFileChooser j = new JFileChooser("f:");
@@ -131,7 +245,7 @@ class CodeEditor extends JFrame implements ActionListener
 					BufferedWriter w = new BufferedWriter(wr);
 
 					// Write 
-					w.write(code.getText());
+					//w.write(code.getText());
 
 					w.flush();
 					w.close();
@@ -143,93 +257,9 @@ class CodeEditor extends JFrame implements ActionListener
 			else
 				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
 		}
-		else if (s.equals("Open")) {
-			// Create an object of JFileChooser class
-			code.setText("");
-			JFileChooser j = new JFileChooser("f:");
-			j.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
-			
-			// Disable the "All files" option.
-			j.setAcceptAllFileFilterUsed(false);
-			//    
-			if (j.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) { 
-				try (Stream<Path> walk = Files.walk(Paths.get(j.getSelectedFile().toString()))) {
-					List<String> result = walk.map(x -> x.toString()).filter(f -> f.endsWith(".java")).collect(Collectors.toList());
-					result.forEach(System.out::println);
-					
-					//Create needed objects for reading files
-					FileReader fr;
-					BufferedReader br;
-					JTextPane newPane;
-					String s1 = "";
-					
-					//Remove current tabs
-					tabPane.removeAll();
-					
-					//Read files and create new panes
-					for(int i = 0; i < result.size(); i += 1)
-					{
-						fr = new FileReader(result.get(i));
-						br = new BufferedReader(fr);
-						newPane = new JTextPane();
-						while ((s1 = br.readLine()) != null)
-						{
-							appendToPane(newPane, s1 + "\n", Color.BLACK);
-						}
-						tabPane.addTab("Tab " + i, null, newPane, "Does nothing");
-					}
-				} 
-				catch (IOException evt) {
-					evt.printStackTrace();
-				}
-			}
-			else {
-				System.out.println("No Selection ");
-			}
-
-			/*
-			// Invoke the showsOpenDialog function to show the save dialog 
-			int r = j.showOpenDialog(null);
-
-			// If the user selects a file 
-			if (r == JFileChooser.APPROVE_OPTION) 
-			{
-				// Set the label to the path of the selected directory 
-				File fi = new File(j.getSelectedFile().getAbsolutePath());
-
-				try {
-					// String 
-					String s1 = "", sl = "";
-
-					// File reader 
-					FileReader fr = new FileReader(fi);
-
-					// Buffered reader 
-					BufferedReader br = new BufferedReader(fr);
-
-					while ((s1 = br.readLine()) != null)
-					{
-						appendToPane(code, s1 + "\n", Color.BLACK);
-					}
-					checkKeywords();
-				} catch (Exception evt) {
-					JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-				}
-			}
-			// If the user cancelled the operation 
-			else
-				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
-			
-			*/
-		} 
-		else if (s.equals("New")) 
-		{
-			code.setText("");
-		} 
 		else if (s.equals("Close")) 
 		{
-			//mainPage.setVisible(false);
-			code.setText("");
+			tabPane.removeAll();
 		}
 		else if (s.equals("Compile")) 
 		{
@@ -310,12 +340,16 @@ class CodeEditor extends JFrame implements ActionListener
 		Runnable doHighlight = new Runnable() {
 			@Override
 			public void run() {
+				if(tabPane.getTabCount() == 0)
+				{
+					return;
+				}
 				try
 				{
 					MutableAttributeSet attributes = new SimpleAttributeSet();
 					StyleConstants.setForeground(attributes, color);
-
-					StyledDocument doc = code.getStyledDocument();
+					
+					StyledDocument doc = ((JTextPane)tabPane.getSelectedComponent()).getStyledDocument();
 					String text = doc.getText(0, doc.getLength());
 					
 					
@@ -327,7 +361,7 @@ class CodeEditor extends JFrame implements ActionListener
 				}
 				catch(Exception e)
 				{
-					JOptionPane.showMessageDialog(null, e.getMessage());
+					e.printStackTrace();
 				}
 			}
 		};       
@@ -346,5 +380,24 @@ class CodeEditor extends JFrame implements ActionListener
         tp.setCaretPosition(len);
         tp.setCharacterAttributes(aset, false);
         tp.replaceSelection(msg);
+    }
+	
+    public static void initialize()
+    {
+        //Default File
+		JTextPane code; //text area
+        code = new JTextPane();
+        code.getStyledDocument().addDocumentListener(new MyDocumentListener());
+		tabPane.addTab("Tab 1", null, code, null);
+    }
+	
+    public static void addSourceFile() {
+        //Default File
+		String name = JOptionPane.showInputDialog(null, "Enter the name of the source file to add.");
+		
+		JTextPane code; //text area
+        code = new JTextPane();
+        code.getStyledDocument().addDocumentListener(new MyDocumentListener());
+		tabPane.addTab(name, null, code, null);
     }
 }
