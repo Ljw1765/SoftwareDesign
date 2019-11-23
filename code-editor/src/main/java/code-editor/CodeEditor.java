@@ -28,9 +28,10 @@ class CodeEditor extends JFrame implements ActionListener
 {
     
     //static JSyntaxPane codeNew; //text area
-    JFrame mainPage; //main page of the code editor
+    static JFrame mainPage; //main page of the code editor
 	static JTabbedPane tabPane; //Tabs
 	static File projectDir;
+	static boolean filesEdited = false;
 	
     CodeEditor()
     {
@@ -111,6 +112,10 @@ class CodeEditor extends JFrame implements ActionListener
 		
 		if (s.equals("New")) 
 		{
+			//Checkpoint! Make sure there aren't any unsaved changes before proceeding.
+			if(!checkpoint())
+				return;
+			
 			int chooseResult = -1;
 			tabPane.removeAll();
 			
@@ -138,7 +143,7 @@ class CodeEditor extends JFrame implements ActionListener
 					
 					if(result.size() > 0)
 					{
-						JOptionPane.showMessageDialog(null, "It seems there's already a Java project here. If you want to include these files, use the Open command instead.");
+						JOptionPane.showMessageDialog(null, "It seems there's already a Java project here. If you want to include these files, use the Open command instead.\n\nIf you don't you may risk overwriting parts of the existing project.");
 					}
 				}
 				catch (IOException evt) {
@@ -159,6 +164,10 @@ class CodeEditor extends JFrame implements ActionListener
 			}
 		} 
 		else if (s.equals("Open")) {
+			//Checkpoint! Make sure there aren't any unsaved changes before proceeding.
+			if(!checkpoint())
+				return;
+			
 			int chooseResult = -1;
 			
 			// Create an object of JFileChooser class
@@ -226,40 +235,45 @@ class CodeEditor extends JFrame implements ActionListener
 		} 
 		else if (s.equals("Save"))
 		{
-			// Create an object of JFileChooser class 
-			JFileChooser j = new JFileChooser("f:");
-
-			// Invoke the showsSaveDialog function to show the save dialog 
-			int r = j.showSaveDialog(null);
-
-			if (r == JFileChooser.APPROVE_OPTION) {
-
-				// Set the label to the path of the selected directory 
-				File fi = new File(j.getSelectedFile().getAbsolutePath());
-
-				try {
-					// Create a file writer 
-					FileWriter wr = new FileWriter(fi, false);
-
-					// Create buffered writer to write 
-					BufferedWriter w = new BufferedWriter(wr);
-
-					// Write 
-					//w.write(code.getText());
-
-					w.flush();
-					w.close();
-				} catch (Exception evt) {
-					JOptionPane.showMessageDialog(mainPage, evt.getMessage());
-				}
-			}
-			// If the user cancelled the operation 
-			else
-				JOptionPane.showMessageDialog(mainPage, "the user cancelled the operation");
+			saveEverything();
 		}
 		else if (s.equals("Close")) 
 		{
+			//Checkpoint! Make sure there aren't any unsaved changes before proceeding.
+			if(!checkpoint())
+				return;
+			
 			tabPane.removeAll();
+			projectDir = null;
+			filesEdited = false;
+		}
+		else if (s.equals("Add a File")) 
+		{
+			//Don't do this if a project directory hasn't been set yet!
+			if(projectDir == null)
+			{
+				JOptionPane.showMessageDialog(mainPage, "Open a project direcotry first.");
+			}
+			else
+			{
+				addSourceFile();				
+			}
+		}
+		else if (s.equals("Remove This File")) 
+		{
+			//Don't do this if a project directory hasn't been set yet!
+			if(projectDir == null)
+			{
+				JOptionPane.showMessageDialog(mainPage, "Open a project direcotry first.");
+			}
+			else if(tabPane.getTabCount() == 0) //Also don't do this is there's nothing to delete
+			{
+				JOptionPane.showMessageDialog(mainPage, "There are no source files to delete!");
+			}
+			else
+			{
+				removeSourceFile();				
+			}
 		}
 		else if (s.equals("Compile")) 
 		{
@@ -301,15 +315,80 @@ class CodeEditor extends JFrame implements ActionListener
 		}
     }
 	
+	public static boolean checkpoint()
+	{
+		if(filesEdited)
+		{
+			int input = JOptionPane.showConfirmDialog(null, "There are unsaved changes. Would you like to save first?", "Confirmation", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.WARNING_MESSAGE);
+			
+			switch(input)
+			{
+				case 0: //Yes
+					saveEverything();
+					return true;
+				case 1: //No
+					return true;
+				case 2: //Cancel
+					return false;
+			}
+		}
+		else
+		{
+			//Green light
+			return true;
+		}
+		
+		//Shouldn't get here, but eh.
+		return false;
+	}
+	
+	public static void saveEverything()
+	{
+		//Return if there's nothing to save.
+		if(tabPane.getTabCount() == 0)
+			return;
+		
+		//Make needed objects
+		File fi;
+		FileWriter wr;
+		BufferedWriter w;
+		
+		//Save all of the files
+		for(int i = 0; i < tabPane.getTabCount(); i += 1)
+		{
+			fi = new File(projectDir + "\\" + tabPane.getTitleAt(i));
+			
+			try {
+				// Create a file writer 
+				wr = new FileWriter(fi, false);
+
+				// Create buffered writer to write 
+				w = new BufferedWriter(wr);
+
+				// Write 
+				w.write(((JTextPane)tabPane.getComponentAt(i)).getText());
+
+				w.flush();
+				w.close();
+			} catch (Exception evt) {
+				JOptionPane.showMessageDialog(mainPage, evt.getMessage());
+			}
+		}
+		
+		filesEdited = false;
+	}
+	
 	static class MyDocumentListener implements DocumentListener {
 		public void insertUpdate(DocumentEvent e) {
 			checkKeywords();
+			filesEdited = true;
 		}
 		public void removeUpdate(DocumentEvent e) {
 			checkKeywords();
+			filesEdited = true;
 		}
 		public void changedUpdate(DocumentEvent e) {
-				
+			filesEdited = true;
 		}
 	}
 	
@@ -393,11 +472,59 @@ class CodeEditor extends JFrame implements ActionListener
 	
     public static void addSourceFile() {
         //Default File
-		String name = JOptionPane.showInputDialog(null, "Enter the name of the source file to add.");
+		String name = "";
+		boolean set = false;
+		
+		while(!set)
+		{
+			name = "";
+			name = JOptionPane.showInputDialog(null, "Enter the name of the source file to add.");
+			
+			if(name == null || name.equals(""))
+			{
+				return;
+			}
+			
+			if(!name.endsWith(".java"))
+			{
+				name += ".java";
+			}
+			
+			if(tabPane.indexOfTab(name) >= 0)
+			{
+				JOptionPane.showMessageDialog(null, "A Source file with that name already exists. Choose a different name.");
+			}
+			else
+			{
+				set = true;
+				filesEdited = true;
+			}
+		}
 		
 		JTextPane code; //text area
         code = new JTextPane();
         code.getStyledDocument().addDocumentListener(new MyDocumentListener());
 		tabPane.addTab(name, null, code, null);
+    }
+	
+    public static void removeSourceFile() {
+        int input = JOptionPane.showConfirmDialog(null, "This is a destructive operation. Are you sure you want to delete this source file?", "Confirm deletion of source file", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+		
+		if(input == 0)
+		{
+			String name = tabPane.getTitleAt(tabPane.getSelectedIndex());
+			tabPane.removeTabAt(tabPane.getSelectedIndex());
+			
+			File file = new File(projectDir + "\\" + name); 
+          
+			if(file.delete()) 
+			{ 
+				//Success
+			} 
+			else
+			{ 
+				JOptionPane.showMessageDialog(null, "Couldn't delete the file. How interesting!");
+			} 
+		}
     }
 }
