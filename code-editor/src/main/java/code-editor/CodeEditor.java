@@ -199,6 +199,8 @@ class CodeEditor extends JFrame implements ActionListener
 					FileReader fr;
 					BufferedReader br;
 					JTextPane newPane;
+					JPanel newPanel;
+					JScrollPane scrollpane;
 					String s1 = "";
 					
 					//Remove current tabs
@@ -211,8 +213,10 @@ class CodeEditor extends JFrame implements ActionListener
 						fr = new FileReader(fi);
 						br = new BufferedReader(fr);
 						newPane = new JTextPane();
+						newPanel = new JPanel(new BorderLayout());
+						newPanel.add(newPane);
 						newPane.getStyledDocument().addDocumentListener(new MyDocumentListener());
-						JScrollPane scrollpane = new JScrollPane(newPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
+						scrollpane = new JScrollPane(newPanel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 						while ((s1 = br.readLine()) != null)
 						{
 							appendToPane(newPane, s1 + "\n", Color.BLACK);
@@ -280,6 +284,10 @@ class CodeEditor extends JFrame implements ActionListener
 		}
 		else if (s.equals("Compile")) 
 		{
+			//Checkpoint! Make sure there aren't any unsaved changes before proceeding.
+			if(!checkpoint())
+				return;
+			
 			//Don't do this if a project directory hasn't been set yet!
 			if(projectDir == null)
 			{
@@ -302,7 +310,8 @@ class CodeEditor extends JFrame implements ActionListener
 					while ((n1 = isr.read(c1)) > 0) {
 						standardOutput.append(c1, 0, n1);
 					}
-					JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
+					if(standardOutput.toString().length() > 0)
+						JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
 
 					int n2;
 					char[] c2 = new char[1024];
@@ -310,7 +319,9 @@ class CodeEditor extends JFrame implements ActionListener
 					while ((n2 = esr.read(c2)) > 0) {
 						standardError.append(c2, 0, n2);
 					}
-					JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					if(standardError.toString().length() > 0)
+						JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					
 					process.destroy();
 				} 
 				catch (IOException err) 
@@ -343,7 +354,8 @@ class CodeEditor extends JFrame implements ActionListener
 					while ((n1 = isr.read(c1)) > 0) {
 						standardOutput.append(c1, 0, n1);
 					}
-					JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
+					if(standardOutput.toString().length() > 0)
+						JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
 
 					int n2;
 					char[] c2 = new char[1024];
@@ -351,7 +363,9 @@ class CodeEditor extends JFrame implements ActionListener
 					while ((n2 = esr.read(c2)) > 0) {
 						standardError.append(c2, 0, n2);
 					}
-					JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					if(standardError.toString().length() > 0)
+						JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					
 					process.destroy();
 				} 
 				catch (IOException err) 
@@ -413,7 +427,7 @@ class CodeEditor extends JFrame implements ActionListener
 				w = new BufferedWriter(wr);
 
 				// Write 
-				w.write((((JTextPane)((JScrollPane)tabPane.getComponentAt(i)).getViewport().getView())).getText());
+				w.write(((JTextPane)(((JPanel)((JScrollPane)tabPane.getComponentAt(i)).getViewport().getView())).getComponent(0)).getText());
 
 				w.flush();
 				w.close();
@@ -480,7 +494,7 @@ class CodeEditor extends JFrame implements ActionListener
 					MutableAttributeSet attributes = new SimpleAttributeSet();
 					StyleConstants.setForeground(attributes, Color.BLACK);
 					
-					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
+					StyledDocument doc = ((JTextPane)(((JPanel)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getComponent(0)).getStyledDocument();
 					String text = doc.getText(0, doc.getLength());
 					
 					doc.setCharacterAttributes(0, doc.getLength(), attributes, true);
@@ -509,7 +523,7 @@ class CodeEditor extends JFrame implements ActionListener
 					MutableAttributeSet attributes = new SimpleAttributeSet();
 					StyleConstants.setForeground(attributes, color);
 					
-					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
+					StyledDocument doc = ((JTextPane)(((JPanel)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getComponent(0)).getStyledDocument();
 					String text = doc.getText(0, doc.getLength());
 					
 					
@@ -542,7 +556,7 @@ class CodeEditor extends JFrame implements ActionListener
 					MutableAttributeSet attributes = new SimpleAttributeSet();
 					StyleConstants.setForeground(attributes, color);
 					
-					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
+					StyledDocument doc = ((JTextPane)(((JPanel)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getComponent(0)).getStyledDocument();
 					String text = doc.getText(0, doc.getLength());
 					
 					Pattern pattern = Pattern.compile("(\".*\")");
@@ -623,8 +637,10 @@ class CodeEditor extends JFrame implements ActionListener
 		}
 		
 		JTextPane code; //text area
+		JPanel panel = new JPanel(new BorderLayout());
         code = new JTextPane();
-		JScrollPane scrollpane = new JScrollPane(code); //Scrollbar
+		panel.add(code);
+		JScrollPane scrollpane = new JScrollPane(panel, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS); //Scrollbar
         code.getStyledDocument().addDocumentListener(new MyDocumentListener());
 		tabPane.addTab(name, null, scrollpane, null);
     }
