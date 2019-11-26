@@ -23,6 +23,8 @@ import java.nio.file.Files.*;
 import java.nio.file.Paths.*;
 import java.util.List;
 import java.util.stream.*;
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 class CodeEditor extends JFrame implements ActionListener
 {
@@ -210,11 +212,12 @@ class CodeEditor extends JFrame implements ActionListener
 						br = new BufferedReader(fr);
 						newPane = new JTextPane();
 						newPane.getStyledDocument().addDocumentListener(new MyDocumentListener());
+						JScrollPane scrollpane = new JScrollPane(newPane, JScrollPane.VERTICAL_SCROLLBAR_ALWAYS, JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
 						while ((s1 = br.readLine()) != null)
 						{
 							appendToPane(newPane, s1 + "\n", Color.BLACK);
 						}
-						tabPane.addTab(fi.getName(), null, newPane, null);
+						tabPane.addTab(fi.getName(), null, scrollpane, null);
 					}
 					checkKeywords();
 				}
@@ -252,7 +255,7 @@ class CodeEditor extends JFrame implements ActionListener
 			//Don't do this if a project directory hasn't been set yet!
 			if(projectDir == null)
 			{
-				JOptionPane.showMessageDialog(mainPage, "Open a project direcotry first.");
+				JOptionPane.showMessageDialog(mainPage, "Open a project directory first.");
 			}
 			else
 			{
@@ -264,7 +267,7 @@ class CodeEditor extends JFrame implements ActionListener
 			//Don't do this if a project directory hasn't been set yet!
 			if(projectDir == null)
 			{
-				JOptionPane.showMessageDialog(mainPage, "Open a project direcotry first.");
+				JOptionPane.showMessageDialog(mainPage, "Open a project directory first.");
 			}
 			else if(tabPane.getTabCount() == 0) //Also don't do this is there's nothing to delete
 			{
@@ -277,41 +280,85 @@ class CodeEditor extends JFrame implements ActionListener
 		}
 		else if (s.equals("Compile")) 
 		{
-			JOptionPane.showMessageDialog(null, "Compiling code...");
-			Runtime runTime = Runtime.getRuntime();
-			try 
+			//Don't do this if a project directory hasn't been set yet!
+			if(projectDir == null)
 			{
-				Process process = runTime.exec("javac .\\test.cpp");
-				InputStream inputStream = process.getInputStream();
-				InputStreamReader isr = new InputStreamReader(inputStream);
-				InputStream errorStream = process.getErrorStream();
-				InputStreamReader esr = new InputStreamReader(errorStream);
-
-				int n1;
-				char[] c1 = new char[1024];
-				StringBuffer standardOutput = new StringBuffer();
-				while ((n1 = isr.read(c1)) > 0) {
-					standardOutput.append(c1, 0, n1);
-				}
-				JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
-
-				int n2;
-				char[] c2 = new char[1024];
-				StringBuffer standardError = new StringBuffer();
-				while ((n2 = esr.read(c2)) > 0) {
-					standardError.append(c2, 0, n2);
-				}
-				JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
-				process.destroy();
-			} 
-			catch (IOException err) 
+				JOptionPane.showMessageDialog(mainPage, "Open a project directory first.");
+			}
+			else
 			{
-				err.printStackTrace();
+				Runtime runTime = Runtime.getRuntime();
+				try 
+				{
+					Process process = runTime.exec("javac " + projectDir + "\\" + "*.java");
+					InputStream inputStream = process.getInputStream();
+					InputStreamReader isr = new InputStreamReader(inputStream);
+					InputStream errorStream = process.getErrorStream();
+					InputStreamReader esr = new InputStreamReader(errorStream);
+
+					int n1;
+					char[] c1 = new char[1024];
+					StringBuffer standardOutput = new StringBuffer();
+					while ((n1 = isr.read(c1)) > 0) {
+						standardOutput.append(c1, 0, n1);
+					}
+					JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
+
+					int n2;
+					char[] c2 = new char[1024];
+					StringBuffer standardError = new StringBuffer();
+					while ((n2 = esr.read(c2)) > 0) {
+						standardError.append(c2, 0, n2);
+					}
+					JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					process.destroy();
+				} 
+				catch (IOException err) 
+				{
+					JOptionPane.showMessageDialog(null, "There seems to be a problem opening javac. Make sure it's installed and can be called from the command line.");
+				}
 			}
 		}
 		else if (s.equals("Run")) 
 		{
-			JOptionPane.showMessageDialog(null, "Running...");
+			//Don't do this if a project directory hasn't been set yet!
+			if(projectDir == null)
+			{
+				JOptionPane.showMessageDialog(mainPage, "Open a project directory first.");
+			}
+			else
+			{
+				Runtime runTime = Runtime.getRuntime();
+				try 
+				{
+					Process process = runTime.exec("java -cp " + projectDir + "\\" + " Main");
+					InputStream inputStream = process.getInputStream();
+					InputStreamReader isr = new InputStreamReader(inputStream);
+					InputStream errorStream = process.getErrorStream();
+					InputStreamReader esr = new InputStreamReader(errorStream);
+
+					int n1;
+					char[] c1 = new char[1024];
+					StringBuffer standardOutput = new StringBuffer();
+					while ((n1 = isr.read(c1)) > 0) {
+						standardOutput.append(c1, 0, n1);
+					}
+					JOptionPane.showMessageDialog(null, "Standard Output\n\n" + standardOutput.toString());
+
+					int n2;
+					char[] c2 = new char[1024];
+					StringBuffer standardError = new StringBuffer();
+					while ((n2 = esr.read(c2)) > 0) {
+						standardError.append(c2, 0, n2);
+					}
+					JOptionPane.showMessageDialog(null, "Standard Error\n\n" + standardError.toString());
+					process.destroy();
+				} 
+				catch (IOException err) 
+				{
+					JOptionPane.showMessageDialog(null, "There was a problem with the java executable. Make sure that Java is installed and can be called from the command line.");
+				}
+			}
 		}
     }
 	
@@ -366,7 +413,7 @@ class CodeEditor extends JFrame implements ActionListener
 				w = new BufferedWriter(wr);
 
 				// Write 
-				w.write(((JTextPane)tabPane.getComponentAt(i)).getText());
+				w.write((((JTextPane)((JScrollPane)tabPane.getComponentAt(i)).getViewport().getView())).getText());
 
 				w.flush();
 				w.close();
@@ -394,6 +441,10 @@ class CodeEditor extends JFrame implements ActionListener
 	
 	public static void checkKeywords()
 	{
+		if(tabPane.getTabCount() == 0)
+		{
+			return;
+		}
 		try
 		{
 			highlightSyntax("if", Color.BLUE);
@@ -407,6 +458,7 @@ class CodeEditor extends JFrame implements ActionListener
 			highlightSyntax("*", Color.RED);
 			highlightSyntax("||", Color.RED);
 			highlightSyntax("&&", Color.RED);
+			highlightStrings(Color.GREEN);
 		}
 		catch(Exception err)
 		{
@@ -414,7 +466,36 @@ class CodeEditor extends JFrame implements ActionListener
 		}
 	}
 	
-	public static void highlightSyntax(String pattern, Color color)
+	public static void resetColor(String pattern, Color color)
+	{
+		Runnable doResetHighlight = new Runnable() {
+			@Override
+			public void run() {
+				if(tabPane.getTabCount() == 0)
+				{
+					return;
+				}
+				try
+				{
+					MutableAttributeSet attributes = new SimpleAttributeSet();
+					StyleConstants.setForeground(attributes, Color.BLACK);
+					
+					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
+					String text = doc.getText(0, doc.getLength());
+					
+					doc.setCharacterAttributes(0, doc.getLength(), attributes, true);
+					
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};       
+		SwingUtilities.invokeLater(doResetHighlight);
+	}
+	
+    public static void highlightSyntax(String pattern, Color color)
 	{
 		Runnable doHighlight = new Runnable() {
 			@Override
@@ -428,7 +509,7 @@ class CodeEditor extends JFrame implements ActionListener
 					MutableAttributeSet attributes = new SimpleAttributeSet();
 					StyleConstants.setForeground(attributes, color);
 					
-					StyledDocument doc = ((JTextPane)tabPane.getSelectedComponent()).getStyledDocument();
+					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
 					String text = doc.getText(0, doc.getLength());
 					
 					
@@ -445,6 +526,46 @@ class CodeEditor extends JFrame implements ActionListener
 			}
 		};       
 		SwingUtilities.invokeLater(doHighlight);
+	}
+	
+    public static void highlightStrings(Color color)
+	{
+		Runnable doStringHighlight = new Runnable() {
+			@Override
+			public void run() {
+				if(tabPane.getTabCount() == 0)
+				{
+					return;
+				}
+				try
+				{
+					MutableAttributeSet attributes = new SimpleAttributeSet();
+					StyleConstants.setForeground(attributes, color);
+					
+					StyledDocument doc = (((JTextPane)((JScrollPane)tabPane.getSelectedComponent()).getViewport().getView())).getStyledDocument();
+					String text = doc.getText(0, doc.getLength());
+					
+					Pattern pattern = Pattern.compile("(\".*\")");
+					Matcher matcher = pattern.matcher(text);
+					
+					int occurances = 0;
+					// Check all occurrences
+					while (matcher.find()) {
+						occurances += 1;
+							
+						if(occurances % 2 == 1)
+						{
+							doc.setCharacterAttributes(matcher.start(), matcher.group(1).length(), attributes, true);
+						}
+					}
+				}
+				catch(Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};       
+		SwingUtilities.invokeLater(doStringHighlight);
 	}
 	
     public static void appendToPane(JTextPane tp, String msg, Color c)
@@ -503,8 +624,9 @@ class CodeEditor extends JFrame implements ActionListener
 		
 		JTextPane code; //text area
         code = new JTextPane();
+		JScrollPane scrollpane = new JScrollPane(code); //Scrollbar
         code.getStyledDocument().addDocumentListener(new MyDocumentListener());
-		tabPane.addTab(name, null, code, null);
+		tabPane.addTab(name, null, scrollpane, null);
     }
 	
     public static void removeSourceFile() {
